@@ -10,6 +10,7 @@ plugins {
   id "com.github.ben-manes.versions" version "0.39.0"
   id "com.github.spotbugs" version "4.7.2" apply false
   id "checkstyle"
+  id "distribution"
 }
 
 group = 'com.linkedin.cruisecontrol'
@@ -206,6 +207,7 @@ project(':cruise-control') {
   apply plugin: 'scala'
   apply plugin: 'maven-publish'
   apply plugin: 'com.jfrog.artifactory'
+  apply plugin: 'distribution'
 
   //needed because our java classes depend on scala classes, so must be compiled by scala
   sourceSets {
@@ -350,6 +352,32 @@ project(':cruise-control') {
     dependsOn createVersionFile
     from("$buildDir") {
       include "cruise-control/$buildVersionFileName"
+    }
+  }
+
+  distTar {
+    compression = Compression.GZIP
+    archiveExtension = 'tar.gz'
+  }
+
+  distributions {
+    main {
+      baseName = project.name
+      contents {
+        dirMode = 0755
+        fileMode = 0644
+        into('cruise-control/build/dependant-libs/') {
+          from jar
+          from configurations.runtimeClasspath
+        }
+        into('config/') {
+          from('../config/')
+        }
+        from('../') {
+          include "kafka-cruise-control-*.sh"
+          fileMode = 0755
+        }
+      }
     }
   }
 }
